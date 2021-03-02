@@ -311,22 +311,14 @@ class RevisionListView(BaseReversionView):
         obj_b, detail_b = self.get_version_object(version_b)
 
         for f in (self.opts.fields + self.opts.many_to_many):
-            if is_related_field2(f):
-                label = f.opts.verbose_name
-            else:
-                label = f.verbose_name
-
+            label = f.opts.verbose_name if is_related_field2(f) else f.verbose_name
             value_a = f.value_from_object(obj_a)
             value_b = f.value_from_object(obj_b)
             is_diff = value_a != value_b
 
             if type(value_a) in (list, tuple) and type(value_b) in (list, tuple) \
                     and len(value_a) == len(value_b) and is_diff:
-                is_diff = False
-                for i in xrange(len(value_a)):
-                    if value_a[i] != value_a[i]:
-                        is_diff = True
-                        break
+                is_diff = any(value_a[i] != value_a[i] for i in xrange(len(value_a)))
             if type(value_a) is QuerySet and type(value_b) is QuerySet:
                 is_diff = list(value_a) != list(value_b)
 
@@ -383,11 +375,23 @@ class BaseRevisionView(ModelFormAdminView):
 class DiffField(Field):
 
     def render(self, form, form_style, context, template_pack=TEMPLATE_PACK, **kwargs):
-        html = ''
-        for field in self.fields:
-            html += ('<div class="diff_field" rel="tooltip"><textarea class="org-data" style="display:none;">%s</textarea>%s</div>' %
-                     (_('Current: %s') % self.attrs.pop('orgdata', ''), render_field(field, form, form_style, context, template_pack=template_pack, attrs=self.attrs)))
-        return html
+        return ''.join(
+            (
+                '<div class="diff_field" rel="tooltip"><textarea class="org-data" style="display:none;">%s</textarea>%s</div>'
+                % (
+                    _('Current: %s') % self.attrs.pop('orgdata', ''),
+                    render_field(
+                        field,
+                        form,
+                        form_style,
+                        context,
+                        template_pack=template_pack,
+                        attrs=self.attrs,
+                    ),
+                )
+            )
+            for field in self.fields
+        )
 
 
 class RevisionView(BaseRevisionView):
@@ -524,11 +528,18 @@ class InlineRevisionPlugin(BaseAdminPlugin):
             fk_name = formset.ct_fk_field.name
         # Look up the revision data.
         revision_versions = version.revision.version_set.all()
-        related_versions = dict([(related_version.object_id, related_version)
-                                 for related_version in revision_versions
-                                 if ContentType.objects.get_for_id(related_version.content_type_id).model_class() == formset.model
-                                 and smart_text(related_version.field_dict[fk_name]) == smart_text(object_id)])
-        return related_versions
+        return dict(
+            [
+                (related_version.object_id, related_version)
+                for related_version in revision_versions
+                if ContentType.objects.get_for_id(
+                    related_version.content_type_id
+                ).model_class()
+                == formset.model
+                and smart_text(related_version.field_dict[fk_name])
+                == smart_text(object_id)
+            ]
+        )
 
     def _hack_inline_formset_initial(self, revision_view, formset):
         """Hacks the given formset to contain the correct initial data."""

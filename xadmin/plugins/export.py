@@ -45,11 +45,21 @@ class ExportMenuPlugin(BaseAdminPlugin):
 
     def block_top_toolbar(self, context, nodes):
         if self.list_export:
-            context.update({
-                'show_export_all': self.admin_view.paginator.count > self.admin_view.list_per_page and not ALL_VAR in self.admin_view.request.GET,
-                'form_params': self.admin_view.get_form_params({'_do_': 'export'}, ('export_type',)),
-                'export_types': [{'type': et, 'name': self.export_names[et]} for et in self.list_export],
-            })
+            context.update(
+                {
+                    'show_export_all': self.admin_view.paginator.count
+                    > self.admin_view.list_per_page
+                    and ALL_VAR not in self.admin_view.request.GET,
+                    'form_params': self.admin_view.get_form_params(
+                        {'_do_': 'export'}, ('export_type',)
+                    ),
+                    'export_types': [
+                        {'type': et, 'name': self.export_names[et]}
+                        for et in self.list_export
+                    ],
+                }
+            )
+
             nodes.append(loader.render_to_string('xadmin/blocks/model_list.top_toolbar.exports.html',
                                                  context=get_context_dict(context)))
 
@@ -66,12 +76,11 @@ class ExportPlugin(BaseAdminPlugin):
     def _format_value(self, o):
         if (o.field is None and getattr(o.attr, 'boolean', False)) or \
            (o.field and isinstance(o.field, (BooleanField, NullBooleanField))):
-                value = o.value
+            return o.value
         elif str(o.text).startswith("<span class='text-muted'>"):
-            value = escape(str(o.text)[25:-7])
+            return escape(str(o.text)[25:-7])
         else:
-            value = escape(str(o.text))
-        return value
+            return escape(str(o.text))
 
     def _get_objects(self, context):
         headers = [c for c in context['result_headers'].cells if c.export]
@@ -174,13 +183,10 @@ class ExportPlugin(BaseAdminPlugin):
 
     def get_csv_export(self, context):
         datas = self._get_datas(context)
-        stream = []
-
         if self.request.GET.get('export_csv_header', 'off') != 'on':
             datas = datas[1:]
 
-        for row in datas:
-            stream.append(','.join(map(self._format_csv_text, row)))
+        stream = [','.join(map(self._format_csv_text, row)) for row in datas]
 
         return '\r\n'.join(stream)
 

@@ -175,8 +175,11 @@ class WizardFormPlugin(BaseAdminPlugin):
 
         file_field_list = []
         for f in opts.fields:
-            if not f.editable or isinstance(f, models.AutoField) \
-                    or not f.name in cleaned_data:
+            if (
+                not f.editable
+                or isinstance(f, models.AutoField)
+                or f.name not in cleaned_data
+            ):
                 continue
             if exclude and f.name in exclude:
                 continue

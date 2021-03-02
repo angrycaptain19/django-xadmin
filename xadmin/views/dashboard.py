@@ -63,9 +63,11 @@ class WidgetTypeSelect(forms.Widget):
 
     def render_options(self, selected_choice, id):
         # Normalize to strings.
-        output = []
-        for widget in self._widgets:
-            output.append(self.render_option(selected_choice, widget, id))
+        output = [
+            self.render_option(selected_choice, widget, id)
+            for widget in self._widgets
+        ]
+
         return u'\n'.join(output)
 
 
@@ -92,9 +94,8 @@ class UserWidgetAdmin(object):
                                      widget=form_widget, label=_('Widget Type'))
         if 'page_id' in self.request.GET and db_field.name == 'page_id':
             kwargs['widget'] = forms.HiddenInput
-        field = super(
+        return super(
             UserWidgetAdmin, self).formfield_for_dbfield(db_field, **kwargs)
-        return field
 
     def get_widget_params_form(self, wizard):
         data = wizard.get_cleaned_data_for_step(wizard.steps.first)
@@ -131,7 +132,7 @@ class UserWidgetAdmin(object):
             return
         pos = [[w for w in col.split(',') if w != str(
             obj.id)] for col in portal_pos.value.split('|')]
-        portal_pos.value = '|'.join([','.join(col) for col in pos])
+        portal_pos.value = '|'.join(','.join(col) for col in pos)
         portal_pos.save()
 
     def delete_model(self):
@@ -283,8 +284,7 @@ class ModelChoiceField(forms.ChoiceField):
         self.widget.choices = self.choices
 
     def __deepcopy__(self, memo):
-        result = forms.Field.__deepcopy__(self, memo)
-        return result
+        return forms.Field.__deepcopy__(self, memo)
 
     def _get_choices(self):
         return ModelChoiceIterator(self)
@@ -304,10 +304,7 @@ class ModelChoiceField(forms.ChoiceField):
 
     def valid_value(self, value):
         value = self.prepare_value(value)
-        for k, v in self.choices:
-            if value == smart_text(k):
-                return True
-        return False
+        return any(value == smart_text(k) for k, v in self.choices)
 
 
 class ModelBaseWidget(BaseWidget):
@@ -535,8 +532,11 @@ class Dashboard(CommAdminView):
             portal.append(portal_col)
 
         UserSettings(
-            user=self.user, key="dashboard:%s:pos" % self.get_page_id(),
-            value='|'.join([','.join([str(w.id) for w in col]) for col in portal])).save()
+            user=self.user,
+            key="dashboard:%s:pos" % self.get_page_id(),
+            value='|'.join(','.join(str(w.id) for w in col) for col in portal),
+        ).save()
+
 
         return portal
 
@@ -608,7 +608,7 @@ class Dashboard(CommAdminView):
                         portal_pos = UserSettings.objects.get(user=self.user, key="dashboard:%s:pos" % self.get_page_id())
                         pos = [[w for w in col.split(',') if w != str(
                             widget_id)] for col in portal_pos.value.split('|')]
-                        portal_pos.value = '|'.join([','.join(col) for col in pos])
+                        portal_pos.value = '|'.join(','.join(col) for col in pos)
                         portal_pos.save()
                     except Exception:
                         pass

@@ -52,15 +52,15 @@ def filter_chain(filters, token, func, *args, **kwargs):
         def _inner_method():
             fm = filters[token]
             fargs = getfullargspec(fm)[0]
-            if len(fargs) == 1:
-                # Only self arg
-                result = func()
-                if result is None:
-                    return fm()
-                else:
-                    raise IncorrectPluginArg(u'Plugin filter method need a arg to receive parent method result.')
-            else:
+            if len(fargs) != 1:
                 return fm(func if fargs[1] == '__' else func(), *args, **kwargs)
+
+            # Only self arg
+            result = func()
+            if result is None:
+                return fm()
+            else:
+                raise IncorrectPluginArg(u'Plugin filter method need a arg to receive parent method result.')
         return filter_chain(filters, token - 1, _inner_method, *args, **kwargs)
 
 

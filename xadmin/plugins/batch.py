@@ -33,8 +33,7 @@ class ChangeFieldWidgetWrapper(forms.Widget):
 
     @property
     def media(self):
-        media = self.widget.media + vendor('xadmin.plugin.batch.js')
-        return media
+        return self.widget.media + vendor('xadmin.plugin.batch.js')
 
     def render(self, name, value, attrs=None):
         output = []
@@ -76,8 +75,11 @@ class BatchChangeAction(BaseActionView):
         data = {}
         fields = self.opts.fields + self.opts.many_to_many
         for f in fields:
-            if not f.editable or isinstance(f, models.AutoField) \
-                    or not f.name in cleaned_data:
+            if (
+                not f.editable
+                or isinstance(f, models.AutoField)
+                or f.name not in cleaned_data
+            ):
                 continue
             data[f] = cleaned_data[f.name]
 

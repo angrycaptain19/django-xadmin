@@ -159,10 +159,7 @@ class ModelFormAdminView(ModelAdminView):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
+        exclude = [] if self.exclude is None else list(self.exclude)
         exclude.extend(self.get_readonly_fields())
         if self.exclude is None and hasattr(self.form, '_meta') and self.form._meta.exclude:
             # Take the custom ModelForm's Meta.exclude into account only if the
@@ -183,12 +180,6 @@ class ModelFormAdminView(ModelAdminView):
             defaults['fields'] = forms.ALL_FIELDS
 
         return modelform_factory(self.model, **defaults)
-
-        try:
-            return modelform_factory(self.model, **defaults)
-        except FieldError as e:
-            raise FieldError('%s. Check fields/fieldsets/exclude attributes of class %s.'
-                             % (e, self.__class__.__name__))
 
     @filter_hook
     def get_form_layout(self):
@@ -378,18 +369,17 @@ class CreateAdminView(ModelFormAdminView):
     def get_form_datas(self):
         # Prepare the dict of initial data from the request.
         # We have to special-case M2Ms as a list of comma-separated PKs.
-        if self.request_method == 'get':
-            initial = dict(self.request.GET.items())
-            for k in initial:
-                try:
-                    f = self.opts.get_field(k)
-                except models.FieldDoesNotExist:
-                    continue
-                if isinstance(f, models.ManyToManyField):
-                    initial[k] = initial[k].split(",")
-            return {'initial': initial}
-        else:
+        if self.request_method != 'get':
             return {'data': self.request.POST, 'files': self.request.FILES}
+        initial = dict(self.request.GET.items())
+        for k in initial:
+            try:
+                f = self.opts.get_field(k)
+            except models.FieldDoesNotExist:
+                continue
+            if isinstance(f, models.ManyToManyField):
+                initial[k] = initial[k].split(",")
+        return {'initial': initial}
 
     @filter_hook
     def get_context(self):

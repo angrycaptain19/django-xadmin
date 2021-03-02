@@ -37,10 +37,7 @@ class ThemePlugin(BaseAdminPlugin):
             except Exception:
                 pass
         if '_theme' in self.request.COOKIES:
-            if six.PY2:
-                func = urllib.unquote
-            else:
-                func = urllib.parse.unquote
+            func = urllib.unquote if six.PY2 else urllib.parse.unquote
             return func(self.request.COOKIES['_theme'])
         return self.default_theme
 
