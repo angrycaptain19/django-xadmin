@@ -187,10 +187,7 @@ class DetailAdminView(ModelAdminView):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
+        exclude = [] if self.exclude is None else list(self.exclude)
         if self.exclude is None and hasattr(self.form, '_meta') and self.form._meta.exclude:
             # Take the custom ModelForm's Meta.exclude into account only if the
             # ModelAdmin doesn't define its own.
@@ -270,10 +267,9 @@ class DetailAdminView(ModelAdminView):
         context = self.get_context()
         context.update(kwargs or {})
         self.request.current_app = self.admin_site.name
-        response = TemplateResponse(self.request, self.detail_template or
+        return TemplateResponse(self.request, self.detail_template or
                                     self.get_template_list('views/model_detail.html'),
                                     context)
-        return response
 
 
 class DetailAdminUtil(DetailAdminView):

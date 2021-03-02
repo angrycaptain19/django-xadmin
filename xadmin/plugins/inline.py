@@ -148,10 +148,7 @@ class InlineModelAdmin(ModelFormAdminView):
     @filter_hook
     def get_formset(self, **kwargs):
         """Returns a BaseInlineFormSet class for use in admin add/change views."""
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
+        exclude = [] if self.exclude is None else list(self.exclude)
         exclude.extend(self.get_readonly_fields())
         if self.exclude is None and hasattr(self.form, '_meta') and self.form._meta.exclude:
             # Take the custom ModelForm's Meta.exclude into account only if the
@@ -248,10 +245,10 @@ class InlineModelAdmin(ModelFormAdminView):
     def has_auto_field(self, form):
         if form._meta.model._meta.has_auto_field:
             return True
-        for parent in form._meta.model._meta.get_parent_list():
-            if parent._meta.has_auto_field:
-                return True
-        return False
+        return any(
+            parent._meta.has_auto_field
+            for parent in form._meta.model._meta.get_parent_list()
+        )
 
     def queryset(self):
         queryset = super(InlineModelAdmin, self).queryset()
@@ -292,10 +289,7 @@ class GenericInlineModelAdmin(InlineModelAdmin):
     formset = BaseGenericInlineFormSet
 
     def get_formset(self, **kwargs):
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
+        exclude = [] if self.exclude is None else list(self.exclude)
         exclude.extend(self.get_readonly_fields())
         if self.exclude is None and hasattr(self.form, '_meta') and self.form._meta.exclude:
             # Take the custom ModelForm's Meta.exclude into account only if the
@@ -461,16 +455,15 @@ class InlineFormsetPlugin(BaseAdminPlugin):
     def _get_detail_formset_instance(self, inline):
         formset = inline.instance_form(extra=0, max_num=0, can_delete=0)
         formset.detail_page = True
-        if True:
-            replace_field_to_value(formset.helper.layout, inline)
-            model = inline.model
-            opts = model._meta
-            fake_admin_class = type(str('%s%sFakeAdmin' % (opts.app_label, opts.model_name)), (object, ), {'model': model})
-            for form in formset.forms:
-                instance = form.instance
-                if instance.pk:
-                    form.detail = self.get_view(
-                        DetailAdminUtil, fake_admin_class, instance)
+        replace_field_to_value(formset.helper.layout, inline)
+        model = inline.model
+        opts = model._meta
+        fake_admin_class = type(str('%s%sFakeAdmin' % (opts.app_label, opts.model_name)), (object, ), {'model': model})
+        for form in formset.forms:
+            instance = form.instance
+            if instance.pk:
+                form.detail = self.get_view(
+                    DetailAdminUtil, fake_admin_class, instance)
         return formset
 
 

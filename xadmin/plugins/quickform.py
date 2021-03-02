@@ -68,8 +68,7 @@ class RelatedFieldWidgetWrapper(forms.Widget):
 
     @property
     def media(self):
-        media = self.widget.media + vendor('xadmin.plugin.quick-form.js')
-        return media
+        return self.widget.media + vendor('xadmin.plugin.quick-form.js')
 
     def render(self, name, value, renderer=None, *args, **kwargs):
         self.widget.choices = self.choices

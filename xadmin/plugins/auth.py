@@ -74,10 +74,7 @@ class UserAdmin(object):
         return attrs
 
     def get_model_form(self, **kwargs):
-        if self.org_obj is None:
-            self.form = UserCreationForm
-        else:
-            self.form = UserChangeForm
+        self.form = UserCreationForm if self.org_obj is None else UserChangeForm
         return super(UserAdmin, self).get_model_form(**kwargs)
 
     def get_form_layout(self):
@@ -222,12 +219,12 @@ class ChangePasswordView(ModelAdminView):
         self.obj = self.get_object(unquote(object_id))
         self.form = self.change_password_form(self.obj, request.POST)
 
-        if self.form.is_valid():
-            self.form.save()
-            self.message_user(_('Password changed successfully.'), 'success')
-            return HttpResponseRedirect(self.model_admin_url('change', self.obj.pk))
-        else:
+        if not self.form.is_valid():
             return self.get_response()
+
+        self.form.save()
+        self.message_user(_('Password changed successfully.'), 'success')
+        return HttpResponseRedirect(self.model_admin_url('change', self.obj.pk))
 
 
 class ChangeAccountPasswordView(ChangePasswordView):
@@ -254,12 +251,12 @@ class ChangeAccountPasswordView(ChangePasswordView):
         self.obj = self.user
         self.form = self.change_password_form(self.obj, request.POST)
 
-        if self.form.is_valid():
-            self.form.save()
-            self.message_user(_('Password changed successfully.'), 'success')
-            return HttpResponseRedirect(self.get_admin_url('index'))
-        else:
+        if not self.form.is_valid():
             return self.get_response()
+
+        self.form.save()
+        self.message_user(_('Password changed successfully.'), 'success')
+        return HttpResponseRedirect(self.get_admin_url('index'))
 
 
 user_model = settings.AUTH_USER_MODEL.lower().replace('.','/')

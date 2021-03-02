@@ -517,8 +517,18 @@ class MultiSelectFieldListFilter(ListFieldFilter):
         for val in self.lookup_choices:
             yield {
                 'selected': smart_text(val) in self.lookup_in_val,
-                'query_string': self.query_string({self.lookup_in_name: ",".join([val] + self.lookup_in_val), }),
-                'remove_query_string': self.query_string({self.lookup_in_name: ",".join([v for v in self.lookup_in_val if v != val]), }),
+                'query_string': self.query_string(
+                    {
+                        self.lookup_in_name: ",".join([val] + self.lookup_in_val),
+                    }
+                ),
+                'remove_query_string': self.query_string(
+                    {
+                        self.lookup_in_name: ",".join(
+                            v for v in self.lookup_in_val if v != val
+                        )
+                    }
+                ),
                 'display': val,
             }
 

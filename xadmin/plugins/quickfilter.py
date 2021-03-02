@@ -121,7 +121,7 @@ class QuickFilterPlugin(BaseAdminPlugin):
                         field_limit = list_quick_filter['limit']
                     if 'sort' in list_quick_filter and callable(list_quick_filter['sort']):
                         sort_key = list_quick_filter['sort']
-                    if 'cache' in list_quick_filter and type(list_quick_filter) == dict:
+                    if 'cache' in list_quick_filter:
                         cache_config = list_quick_filter['cache']
 
                 else:

@@ -124,11 +124,15 @@ class ImportBaseView(ModelAdminView):
 
     def get_resource_class(self, usage):
         if usage == 'import':
-            return self.import_export_args.get('import_resource_class') if self.import_export_args.get(
-                'import_resource_class') else modelresource_factory(self.model)
+            return self.import_export_args.get(
+                'import_resource_class'
+            ) or modelresource_factory(self.model)
+
         elif usage == 'export':
-            return self.import_export_args.get('export_resource_class') if self.import_export_args.get(
-                'export_resource_class') else modelresource_factory(self.model)
+            return self.import_export_args.get(
+                'export_resource_class'
+            ) or modelresource_factory(self.model)
+
         else:
             return modelresource_factory(self.model)
 
@@ -292,7 +296,10 @@ class ImportProcessView(ImportBaseView):
                 }
                 content_type_id = ContentType.objects.get_for_model(self.model).pk
                 for row in result:
-                    if row.import_type != row.IMPORT_TYPE_ERROR and row.import_type != row.IMPORT_TYPE_SKIP:
+                    if row.import_type not in [
+                        row.IMPORT_TYPE_ERROR,
+                        row.IMPORT_TYPE_SKIP,
+                    ]:
                         LogEntry.objects.log_action(
                             user_id=request.user.pk,
                             content_type_id=content_type_id,
@@ -337,11 +344,15 @@ class ExportMixin(object):
 
     def get_resource_class(self, usage):
         if usage == 'import':
-            return self.import_export_args.get('import_resource_class') if self.import_export_args.get(
-                'import_resource_class') else modelresource_factory(self.model)
+            return self.import_export_args.get(
+                'import_resource_class'
+            ) or modelresource_factory(self.model)
+
         elif usage == 'export':
-            return self.import_export_args.get('export_resource_class') if self.import_export_args.get(
-                'export_resource_class') else modelresource_factory(self.model)
+            return self.import_export_args.get(
+                'export_resource_class'
+            ) or modelresource_factory(self.model)
+
         else:
             return modelresource_factory(self.model)
 
@@ -359,10 +370,9 @@ class ExportMixin(object):
 
     def get_export_filename(self, file_format):
         date_str = datetime.now().strftime('%Y-%m-%d-%H%M%S')
-        filename = "%s-%s.%s" % (self.opts.verbose_name.encode('utf-8'),
+        return "%s-%s.%s" % (self.opts.verbose_name.encode('utf-8'),
                                  date_str,
                                  file_format.get_extension())
-        return filename
 
     def get_export_queryset(self, request, context):
         """
@@ -374,19 +384,15 @@ class ExportMixin(object):
         scope = request.GET.get('scope')
         select_across = request.GET.get('_select_across', False) == '1'
         selected = request.GET.get('_selected_actions', '')
-        if scope == 'all':
-            queryset = self.admin_view.queryset()
+        if scope == 'selected' and not select_across:
+            selected_pk = selected.split(',')
+            return self.admin_view.queryset().filter(pk__in=selected_pk)
+        elif scope in ['selected', 'all']:
+            return self.admin_view.queryset()
         elif scope == 'header_only':
-            queryset = []
-        elif scope == 'selected':
-            if not select_across:
-                selected_pk = selected.split(',')
-                queryset = self.admin_view.queryset().filter(pk__in=selected_pk)
-            else:
-                queryset = self.admin_view.queryset()
+            return []
         else:
-            queryset = [r['object'] for r in context['results']]
-        return queryset
+            return [r['object'] for r in context['results']]
 
     def get_export_data(self, file_format, queryset, *args, **kwargs):
         """
@@ -395,8 +401,7 @@ class ExportMixin(object):
         request = kwargs.pop("request")
         resource_class = self.get_export_resource_class()
         data = resource_class(**self.get_export_resource_kwargs(request)).export(queryset, *args, **kwargs)
-        export_data = file_format.export_data(data)
-        return export_data
+        return file_format.export_data(data)
 
 
 class ExportMenuPlugin(ExportMixin, BaseAdminPlugin):

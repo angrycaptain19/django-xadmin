@@ -113,7 +113,7 @@ class AdminRadioFieldRenderer(forms.RadioSelect):
         return AdminRadioInput(self.name, self.value, self.attrs.copy(), choice, idx)
 
     def render(self):
-        return mark_safe(u'\n'.join([force_text(w) for w in self]))
+        return mark_safe(u'\n'.join(force_text(w) for w in self))
 
 
 class AdminRadioSelect(forms.RadioSelect):
@@ -129,7 +129,7 @@ class AdminCheckboxSelect(forms.CheckboxSelectMultiple):
         final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
         output = []
         # Normalize to strings
-        str_values = set([force_text(v) for v in value])
+        str_values = {force_text(v) for v in value}
         for i, (option_value, option_label) in enumerate(chain(self.choices, choices)):
             # If an ID attribute was given, add a numeric index as a suffix,
             # so that the checkboxes don't all have the same ID attribute.

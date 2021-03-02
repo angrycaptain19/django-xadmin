@@ -54,15 +54,14 @@ def xstatic(*tags):
             for p in tag.split('.'):
                 node = node[p]
         except Exception as e:
-            if tag.startswith('xadmin'):
-                file_type = tag.split('.')[-1]
-                if file_type in ('css', 'js'):
-                    node = "xadmin/%s/%s" % (file_type, tag)
-                else:
-                    raise e
-            else:
+            if not tag.startswith('xadmin'):
                 raise e
 
+            file_type = tag.split('.')[-1]
+            if file_type in ('css', 'js'):
+                node = "xadmin/%s/%s" % (file_type, tag)
+            else:
+                raise e
         if isinstance(node, cls_str):
             files = node
         else:
@@ -102,12 +101,10 @@ def lookup_needs_distinct(opts, lookup_path):
     """
     field_name = lookup_path.split('__', 1)[0]
     field = opts.get_field(field_name)
-    if ((hasattr(field, 'remote_field') and
+    return bool(((hasattr(field, 'remote_field') and
          isinstance(field.remote_field, models.ManyToManyRel)) or
         (is_related_field(field) and
-         not field.field.unique)):
-        return True
-    return False
+         not field.field.unique)))
 
 
 def prepare_lookup_value(key, value):
@@ -119,10 +116,7 @@ def prepare_lookup_value(key, value):
         value = value.split(',')
     # if key ends with __isnull, special case '' and false
     if key.endswith('__isnull') and type(value) == str:
-        if value.lower() in ('', 'false'):
-            value = False
-        else:
-            value = True
+        value = value.lower() not in ('', 'false')
     return value
 
 
@@ -213,10 +207,7 @@ class NestedObjects(Collector):
         children = []
         for child in self.edges.get(obj, ()):
             children.extend(self._nested(child, seen, format_callback))
-        if format_callback:
-            ret = [format_callback(obj)]
-        else:
-            ret = [obj]
+        ret = [format_callback(obj)] if format_callback else [obj]
         if children:
             ret.append(children)
         return ret
@@ -305,10 +296,7 @@ def lookup_field(name, obj, model_admin=None):
                 if rel_obj is not None:
                     return lookup_field(sub_rel_name, rel_obj, model_admin)
             attr = getattr(obj, name)
-            if callable(attr):
-                value = attr()
-            else:
-                value = attr
+            value = attr() if callable(attr) else attr
         f = None
     else:
         attr = None
@@ -425,10 +413,7 @@ def get_fields_from_path(model, path):
     pieces = path.split(LOOKUP_SEP)
     fields = []
     for piece in pieces:
-        if fields:
-            parent = get_model_from_relation(fields[-1])
-        else:
-            parent = model
+        parent = get_model_from_relation(fields[-1]) if fields else model
         fields.append(parent._meta.get_field(piece))
     return fields
 

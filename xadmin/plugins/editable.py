@@ -102,10 +102,7 @@ class EditPatchView(ModelFormAdminView, ListAdminView):
             else:
                 if isinstance(f.rel, models.ManyToOneRel):
                     field_val = getattr(self.org_obj, f.name)
-                    if field_val is None:
-                        text = EMPTY_CHANGELIST_VALUE
-                    else:
-                        text = field_val
+                    text = EMPTY_CHANGELIST_VALUE if field_val is None else field_val
                 else:
                     text = display_for_field(value, f)
             return mark_safe(text) if allow_tags else conditional_escape(text)

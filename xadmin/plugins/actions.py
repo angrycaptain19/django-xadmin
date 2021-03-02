@@ -168,9 +168,12 @@ class ActionPlugin(BaseAdminPlugin):
         return list_display
 
     def get_list_display_links(self, list_display_links):
-        if self.actions:
-            if len(list_display_links) == 1 and list_display_links[0] == 'action_checkbox':
-                return list(self.admin_view.list_display[1:2])
+        if (
+            self.actions
+            and len(list_display_links) == 1
+            and list_display_links[0] == 'action_checkbox'
+        ):
+            return list(self.admin_view.list_display[1:2])
         return list_display_links
 
     def get_context(self, context):
@@ -226,12 +229,12 @@ class ActionPlugin(BaseAdminPlugin):
         return response
 
     def response_action(self, ac, queryset):
-        if isinstance(ac, type) and issubclass(ac, BaseActionView):
-            action_view = self.get_model_view(ac, self.admin_view.model)
-            action_view.init_action(self.admin_view)
-            return action_view.do_action(queryset)
-        else:
+        if not isinstance(ac, type) or not issubclass(ac, BaseActionView):
             return ac(self.admin_view, self.request, queryset)
+
+        action_view = self.get_model_view(ac, self.admin_view.model)
+        action_view.init_action(self.admin_view)
+        return action_view.do_action(queryset)
 
     def get_actions(self):
         if self.actions is None:

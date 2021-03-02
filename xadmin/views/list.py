@@ -235,9 +235,6 @@ class ListAdminView(ModelAdminView):
                             related_fields.append(field_name)
                 if related_fields:
                     queryset = queryset.select_related(*related_fields)
-            else:
-                pass
-
         # Then, set queryset ordering.
         queryset = queryset.order_by(*self.get_ordering())
 
@@ -482,15 +479,14 @@ class ListAdminView(ModelAdminView):
                 # front
                 o_list_asc.insert(0, j)
                 o_list_desc.insert(0, '-' + j)
-                o_list_toggle.append(param)
-                # o_list_remove - omit
+                        # o_list_remove - omit
             else:
                 param = make_qs_param(ot, j)
                 o_list_asc.append(param)
                 o_list_desc.append(param)
-                o_list_toggle.append(param)
                 o_list_remove.append(param)
 
+            o_list_toggle.append(param)
         if field_name not in ordering_field_columns:
             o_list_asc.insert(0, field_name)
             o_list_desc.insert(0, '-' + field_name)
@@ -558,9 +554,9 @@ class ListAdminView(ModelAdminView):
                         item.text = field_val
                 else:
                     item.text = display_for_field(value, f)
-                if isinstance(f, models.DateField)\
-                    or isinstance(f, models.TimeField)\
-                        or isinstance(f, models.ForeignKey):
+                if isinstance(
+                    f, (models.DateField, models.TimeField, models.ForeignKey)
+                ):
                     item.classes.append('nowrap')
 
             item.field = f
@@ -598,10 +594,7 @@ class ListAdminView(ModelAdminView):
 
     @filter_hook
     def results(self):
-        results = []
-        for obj in self.result_list:
-            results.append(self.result_row(obj))
-        return results
+        return [self.result_row(obj) for obj in self.result_list]
 
     @filter_hook
     def url_for_result(self, result):
@@ -629,8 +622,6 @@ class ListAdminView(ModelAdminView):
             page_range = []
         else:
             ON_EACH_SIDE = {'normal': 5, 'small': 3}.get(page_type, 3)
-            ON_ENDS = 2
-
             # If there are 10 or fewer pages, display links to every page.
             # Otherwise, do some fancy
             if paginator.num_pages <= 10:
@@ -640,13 +631,15 @@ class ListAdminView(ModelAdminView):
                 # links at either end of the list of pages, and there are always
                 # ON_EACH_SIDE links at either end of the "current page" link.
                 page_range = []
+                ON_ENDS = 2
+
                 if page_num > (ON_EACH_SIDE + ON_ENDS):
-                    page_range.extend(range(0, ON_EACH_SIDE - 1))
+                    page_range.extend(range(ON_EACH_SIDE - 1))
                     page_range.append(DOT)
                     page_range.extend(
                         range(page_num - ON_EACH_SIDE, page_num + 1))
                 else:
-                    page_range.extend(range(0, page_num + 1))
+                    page_range.extend(range(page_num + 1))
                 if page_num < (paginator.num_pages - ON_EACH_SIDE - ON_ENDS - 1):
                     page_range.extend(
                         range(page_num + 1, page_num + ON_EACH_SIDE + 1))
